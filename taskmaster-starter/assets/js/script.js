@@ -9,13 +9,27 @@ var createTask = function (taskText, taskDate, taskList) {
   var taskP = $("<p>")
     .addClass("m-1")
     .text(taskText);
-
-  // append span and p element to parent li
+ // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
-
-  // append to ul list on the page
+  auditTask(taskLi);
+// append to ul list on the page
   $("#list-" + taskList).append(taskLi);
+};
+
+var auditTask = function(taskEl) {
+ var date = $(taskEl).find("span").text().trim();
+
+ var time = moment(date, "L").set("hour", 17);
+ $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+
+ if (moment().isAfter(time)) {
+   $(taskEl).addClass("list-group-item-danger");
+ }
+ else if (Math.abs(moment().diff(time, "days")) <= 2) {
+   $(taskEl).addClass("list-group-item-warning");
+ }
+ 
 };
 
 var loadTasks = function () {
@@ -180,19 +194,26 @@ $(".list-group").on("click", "span", function () {
     .text()
     .trim();
 
-  // create new input element
+     // create new input element
   var dateInput = $("<input>")
     .attr("type", "text")
     .addClass("form-control")
     .val(date);
   $(this).replaceWith(dateInput);
 
+  dateInput.datepicker({
+    minDate: 1,
+    onClose: function() {
+      $(this).trigger("change");
+    }
+  });
+
   // automatically bring up the calendar
   dateInput.trigger("focus");
 });
 
 // value of due date was changed
-$(".list-group").on("blur", "input[type='text']", function () {
+$(".list-group").on("change", "input[type='text']", function () {
   var date = $(this).val();
 
   // get status type and position in the list
@@ -203,18 +224,15 @@ $(".list-group").on("blur", "input[type='text']", function () {
   var index = $(this)
     .closest(".list-group-item")
     .index();
-
-
-
-  // update task in array and re-save to localstorage
+// update task in array and re-save to localstorage
   tasks[status][index].date = date;
   saveTasks();
-
-  // recreate span and insert in place of input element
+// recreate span and insert in place of input element
   var taskSpan = $("<span>")
     .addClass("badge badge-primary badge-pill")
     .text(date);
   $(this).replaceWith(taskSpan);
+  auditTask($(taskSpan).closest(".list-group-item"));
 });
 
 // remove all tasks
@@ -240,7 +258,14 @@ $("#trash").droppable({
     console.log("out");
   }
 })
+
+$("#modalDueDate").datepicker( {
+  minDate: 1
+});
 // load tasks for the first time
+
+
+
 loadTasks();
 
 
